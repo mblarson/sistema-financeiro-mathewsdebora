@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mathews e Débora – Finanças</title>
+    <!-- Ícones -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-dark: #3730a3;
+            --secondary: #1E1E2D; /* Sidebar Dark */
+            --bg-body: #F3F4F6;
+            --bg-card: #FFFFFF;
+            --text-main: #1F2937;
+            --text-muted: #6B7280;
+            --success: #10B981;
+            --danger: #EF4444;
+            --warning: #F59E0B;
+            --sidebar-width: 260px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, Helvetica, sans-serif; }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- Sidebar --- */
+        aside {
+            width: var(--sidebar-width);
+            background-color: var(--secondary);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            transition: transform 0.3s ease;
+            z-index: 100;
+        }
+
+        .brand {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 40px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #fff;
+        }
+
+        nav ul { list-style: none; }
+        
+        nav li {
+            padding: 12px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #A0A0B0;
+            transition: 0.2s;
+            margin-bottom: 5px;
+        }
+
+        nav li:hover, nav li.active {
+            background-color: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        nav li i { font-size: 1.2rem; }
+
+        /* --- Main Content --- */
+        main {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 40px;
+            position: relative;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        h1 { font-size: 1.8rem; font-weight: 700; color: var(--secondary); }
+        .current-month-badge {
+            background: var(--primary);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .closed-month-badge {
+            background: var(--danger);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        /* --- Cards & Grid --- */
+        .cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card h3 { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 10px; }
+        .card .value { font-size: 1.8rem; font-weight: bold; color: var(--text-main); }
+        .card .icon-bg {
+            width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .bg-green-light { background: #DCFCE7; color: var(--success); }
+        .bg-red-light { background: #FEE2E2; color: var(--danger); }
+        .bg-blue-light { background: #DBEAFE; color: var(--primary); }
+
+        /* --- Lists & Tables --- */
+        .list-container {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        .list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .btn-add {
+            background: var(--primary); color: white; border: none; padding: 10px 20px;
+            border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 8px;
+            font-weight: 600; transition: 0.2s;
+        }
+        .btn-add:hover { background: var(--primary-dark); }
+
+        .item-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 15px 0; border-bottom: 1px solid #eee;
+            transition: 0.2s;
+        }
+        .item-row:last-child { border-bottom: none; }
+        
+        .item-info { flex: 1; }
+        .item-title { font-weight: 600; color: var(--text-main); }
+        .item-date { font-size: 0.8rem; color: var(--text-muted); }
+        .item-value { font-weight: bold; margin-right: 15px; }
+
+        .paid-item { background-color: #ecfdf5; border-radius: 8px; padding: 10px; border-bottom: none; margin-bottom: 5px;}
+        .paid-item .item-title, .paid-item .item-value { color: var(--success); text-decoration: none; }
+
+        .actions { display: flex; gap: 10px; }
+        .btn-icon { background: none; border: none; cursor: pointer; font-size: 1.1rem; color: var(--text-muted); padding: 5px;}
+        .btn-icon:hover { color: var(--primary); }
+        .btn-icon.delete:hover { color: var(--danger); }
+        .btn-icon.check:hover { color: var(--success); }
+
+        /* --- Tabs --- */
+        .tabs { display: flex; gap: 20px; margin-bottom: 20px; border-bottom: 2px solid #eee; }
+        .tab { padding: 10px 0; cursor: pointer; color: var(--text-muted); font-weight: 600; position: relative; }
+        .tab.active { color: var(--primary); }
+        .tab.active::after {
+            content: ''; position: absolute; bottom: -2px; left: 0; width: 100%; height: 2px; background: var(--primary);
+        }
+
+        /* --- Modals --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal {
+            background: white; width: 90%; max-width: 500px; padding: 30px; border-radius: 20px;
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
+        .modal h2 { margin-bottom: 20px; color: var(--secondary); }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-size: 0.9rem; color: var(--text-muted); }
+        .form-group input, .form-group select {
+            width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; outline: none;
+        }
+        .form-group input:focus { border-color: var(--primary); }
+        
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+        .btn-cancel { background: #f3f4f6; color: var(--text-main); border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; }
+        .btn-confirm { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; }
+
+        /* --- Toast --- */
+        #toast {
+            visibility: hidden; min-width: 250px; background-color: #333; color: #fff; text-align: center;
+            border-radius: 8px; padding: 16px; position: fixed; z-index: 2000; left: 50%; bottom: 30px; transform: translateX(-50%);
+        }
+        #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: 1;} }
+        @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+
+        /* --- Mobile --- */
+        .mobile-menu-btn { display: none; position: absolute; top: 20px; left: 20px; z-index: 200; font-size: 1.5rem; color: var(--secondary); cursor: pointer; }
+        
+        @media (max-width: 768px) {
+            aside { position: absolute; height: 100%; transform: translateX(-100%); }
+            aside.open { transform: translateX(0); }
+            main { padding: 80px 20px 20px 20px; }
+            .mobile-menu-btn { display: block; }
+            .cards-container { grid-template-columns: 1fr; }
+        }
+
+        /* Fechamento Screen Specifics */
+        .month-card {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px; background: #fff; border-radius: 12px; margin-bottom: 10px;
+            border: 1px solid #eee;
+        }
+        .month-card.active-month { border-left: 5px solid var(--primary); }
+        .month-card.closed-month { border-left: 5px solid var(--text-muted); background: #f9fafb; }
+
+        .btn-close-month {
+            background: var(--danger); color: white; border: none; padding: 10px 20px;
+            border-radius: 10px; cursor: pointer; width: 100%; font-weight: bold; margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Toast Notification -->
+    <div id="toast"></div>
+
+    <!-- Mobile Menu Toggle -->
+    <div class="mobile-menu-btn" onclick="toggleSidebar()">
+        <i class="ph ph-list"></i>
+    </div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar">
+        <div class="brand">
+            <i class="ph ph-wallet" style="font-size: 1.5rem; color: var(--primary);"></i>
+            <span>M&D Finanças</span>
+        </div>
+        <nav>
+            <ul>
+                <li onclick="navigate('overview')" class="active" id="nav-overview">
+                    <i class="ph ph-squares-four"></i> Visão Geral
+                </li>
+                <li onclick="navigate('expenses')" id="nav-expenses">
+                    <i class="ph ph-receipt"></i> Despesas
+                </li>
+                <li onclick="navigate('revenue')" id="nav-revenue">
+                    <i class="ph ph-trend-up"></i> Receitas
+                </li>
+                <li onclick="navigate('banks')" id="nav-banks">
+                    <i class="ph ph-bank"></i> Bancos
+                </li>
+                <li onclick="navigate('closing')" id="nav-closing">
+                    <i class="ph ph-lock-key"></i> Fechamento
+                </li>
+            </ul>
+        </nav>
+        <div style="margin-top: auto; font-size: 0.8rem; color: #666; text-align: center;">
+            v1.0.0
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main id="main-content">
+        <!-- Dynamic Content Injected Here -->
+    </main>
+
+    <!-- Generic Modal -->
+    <div id="generic-modal" class="modal-overlay">
+        <div class="modal">
+            <h2 id="modal-title">Título</h2>
+            <div id="modal-body"></div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+                <button class="btn-confirm" id="modal-confirm-btn">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =========================================================================
+        // 1. CONFIGURAÇÃO E CONSTANTES
+        // =========================================================================
+        
+        // ⚠️ SUBSTITUA AQUI COM SUAS CREDENCIAIS DO SUPABASE
+        const SUPABASE_URL = 'SUA_URL_DO_SUPABASE'https://bnhxmjcgyqwjombhrdks.supabase.co; 
+        const SUPABASE_KEY = 'SUA_ANON_KEY_DO_SUPABASE'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJuaHhtamNneXF3am9tYmhyZGtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NDk3MDksImV4cCI6MjA4MDQyNTcwOX0.wg7k8DJhE29d24BzGwp5ltUx_x_4iXjQFOC55x3t4B8;
+
+        let supabase;
+        try {
+            supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        } catch (e) {
+            console.error("Erro ao inicializar Supabase. Verifique as credenciais.");
+            alert("Erro: Configure as credenciais do Supabase no código HTML.");
+        }
+
+        // Estado Global
+        let state = {
+            currentMonthId: null, // ID do mês sendo visualizado
+            activeMonthId: null,  // ID do mês realmente aberto (mais recente)
+            currentMonthData: null,
+            view: 'overview',
+            pixTax: 0
+        };
+
+        const formatCurrency = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+        const formatDate = (dateStr) => {
+            if(!dateStr) return '-';
+            const [y, m, d] = dateStr.split('-');
+            return `${d}/${m}/${y}`;
+        };
+
+        // =========================================================================
+        // 2. INICIALIZAÇÃO
+        // =========================================================================
+
+        async function init() {
+            if (SUPABASE_URL === 'SUA_URL_DO_SUPABASE') {
+                document.getElementById('main-content').innerHTML = `<div style="text-align:center; margin-top:50px;"><h2>⚠️ Configuração Necessária</h2><p>Abra o arquivo HTML em um editor de texto e insira sua URL e KEY do Supabase nas linhas indicadas.</p></div>`;
+                return;
+            }
+
+            // 1. Carregar Configuração Pix
+            await loadPixConfig();
+
+            // 2. Checar Meses
+            await checkAndInitMonths();
+
+            // 3. Renderizar Tela Inicial
+            navigate('overview');
+        }
+
+        async function loadPixConfig() {
+            const { data, error } = await supabase.from('configuracoes').select('*').eq('chave', 'taxa_pix').single();
+            if (data) state.pixTax = parseFloat(data.valor);
+            else state.pixTax = 5.0; // Default
+        }
+
+        async function checkAndInitMonths() {
+            // Busca o último mês criado
+            const { data: meses, error } = await supabase
+                .from('meses')
+                .select('*')
+                .order('criado_em', { ascending: false });
+
+            if (!meses || meses.length === 0) {
+                // Primeiro uso: Criar Dezembro 2025
+                const { data, error: insertError } = await supabase
+                    .from('meses')
+                    .insert([{ nome: 'DEZEMBRO', ano: 2025, status: 'ativo' }])
+                    .select()
+                    .single();
+                
+                if (insertError) { showToast('Erro ao criar mês inicial'); return; }
+                state.currentMonthId = data.id;
+                state.activeMonthId = data.id;
+                state.currentMonthData = data;
+            } else {
+                // Pega o mais recente que NÃO está fechado, ou o último fechado se todos estiverem fechados (caso raro)
+                const active = meses.find(m => m.status === 'ativo') || meses[0];
+                state.activeMonthId = active.id;
+                
+                // Inicialmente, visualizamos o mês ativo
+                state.currentMonthId = active.id;
+                state.currentMonthData = active;
+            }
+        }
+
+        // =========================================================================
+        // 3. NAVEGAÇÃO E UI GERAL
+        // =========================================================================
+
+        function navigate(viewName) {
+            state.view = viewName;
+            
+            // Sidebar Active State
+            document.querySelectorAll('nav li').forEach(li => li.classList.remove('active'));
+            document.getElementById(`nav-${viewName}`).classList.add('active');
+
+            // Mobile sidebar close
+            document.getElementById('sidebar').classList.remove('open');
+
+            // Render logic
+            const main = document.getElementById('main-content');
+            main.innerHTML = '<div style="text-align:center; padding:40px;"><i class="ph ph-spinner ph-spin" style="font-size:2rem;"></i></div>';
+
+            switch(viewName) {
+                case 'overview': renderOverview(); break;
+                case 'expenses': renderExpenses(); break;
+                case 'revenue': renderRevenue(); break;
+                case 'banks': renderBanks(); break;
+                case 'closing': renderClosing(); break;
+            }
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById("toast");
+            t.className = "show";
+            t.textContent = msg;
+            setTimeout(() => { t.className = t.className.replace("show", ""); }, 3000);
+        }
+
+        function renderHeader(title) {
+            const isClosed = state.currentMonthData.status === 'fechado';
+            const badgeClass = isClosed ? 'closed-month-badge' : 'current-month-badge';
+            const badgeText = isClosed ? 'VISUALIZANDO MÊS FECHADO' : 'MÊS ATUAL';
+            
+            return `
+                <header>
+                    <div>
+                        <span class="${badgeClass}">${badgeText}</span>
+                        <h1 style="margin-top:10px;">${title}</h1>
+                        <p style="color:var(--text-muted)">${state.currentMonthData.nome}/${state.currentMonthData.ano}</p>
+                    </div>
+                    ${isClosed ? `<button onclick="revertToActiveMonth()" style="padding:8px 15px; border-radius:8px; border:1px solid #ccc; background:white; cursor:pointer;">Voltar ao Mês Atual</button>` : ''}
+                </header>
+            `;
+        }
+
+        function revertToActiveMonth() {
+            state.currentMonthId = state.activeMonthId;
+            // Fetch fresh data for active month
+            supabase.from('meses').select('*').eq('id', state.activeMonthId).single().then(({data}) => {
+                state.currentMonthData = data;
+                navigate(state.view);
+            });
+        }
+
+        // =========================================================================
+        // 4. MÓDULO: VISÃO GERAL
+        // =========================================================================
+
+        async function renderOverview() {
+            const main = document.getElementById('main-content');
+            
+            // Buscar totais
+            const [receitas, despesas, pix, bancos] = await Promise.all([
+                supabase.from('receitas').select('valor').eq('mes_id', state.currentMonthId),
+                supabase.from('despesas_contas').select('valor, pago').eq('mes_id', state.currentMonthId),
+                supabase.from('despesas_pix_credito').select('valor_final, pago').eq('mes_id', state.currentMonthId),
+                supabase.from('banco_despesas').select('valor, pago').eq('mes_id', state.currentMonthId)
+            ]);
+
+            const totalEntradas = receitas.data.reduce((acc, curr) => acc + curr.valor, 0);
+            
+            const totalDespesas = despesas.data.reduce((acc, curr) => acc + curr.valor, 0) +
+                                  pix.data.reduce((acc, curr) => acc + curr.valor_final, 0) +
+                                  bancos.data.reduce((acc, curr) => acc + curr.valor, 0);
+
+            const saldo = totalEntradas - totalDespesas;
+
+            const isClosed = state.currentMonthData.status === 'fechado';
+
+            main.innerHTML = `
+                ${renderHeader('Visão Geral')}
+                
+                <div class="cards-container">
+                    <div class="card">
+                        <div>
+                            <div class="icon-bg bg-green-light"><i class="ph ph-arrow-down"></i></div>
+                            <h3>Entradas</h3>
+                        </div>
+                        <div class="value" style="color: var(--success)">${formatCurrency(totalEntradas)}</div>
+                    </div>
+                    <div class="card">
+                        <div>
+                            <div class="icon-bg bg-red-light"><i class="ph ph-arrow-up"></i></div>
+                            <h3>Saídas</h3>
+                        </div>
+                        <div class="value" style="color: var(--danger)">${formatCurrency(totalDespesas)}</div>
+                    </div>
+                    <div class="card">
+                        <div>
+                            <div class="icon-bg bg-blue-light"><i class="ph ph-scales"></i></div>
+                            <h3>Saldo Atual</h3>
+                        </div>
+                        <div class="value" style="color: ${saldo >= 0 ? 'var(--success)' : 'var(--danger)'}">${formatCurrency(saldo)}</div>
+                    </div>
+                </div>
+
+                ${!isClosed ? `
+                <div class="card" style="align-items:center; text-align:center; border: 1px dashed var(--danger);">
+                    <h3 style="color:var(--danger)">Zona de Fechamento</h3>
+                    <p style="margin-bottom:15px; color:#666;">Finalize o mês atual para gerar automaticamente o próximo período.</p>
+                    <button class="btn-close-month" onclick="closeMonthRoutine()">FECHAR MÊS DE ${state.currentMonthData.nome}</button>
+                </div>
+                ` : ''}
+            `;
+        }
+
+        // =========================================================================
+        // 5. MÓDULO: DESPESAS E PIX
+        // =========================================================================
+
+        async function renderExpenses() {
+            const main = document.getElementById('main-content');
+            
+            main.innerHTML = `
+                ${renderHeader('Despesas')}
+                <div class="tabs">
+                    <div class="tab active" onclick="switchTab('contas', this)">Contas</div>
+                    <div class="tab" onclick="switchTab('pix', this)">Pix Crédito</div>
+                </div>
+
+                <!-- Tab Contas -->
+                <div id="tab-contas">
+                    <div class="list-container">
+                        <div class="list-header">
+                            <h3>Contas do Mês</h3>
+                            ${state.currentMonthData.status === 'ativo' ? 
+                            `<button class="btn-add" onclick="openExpenseModal('conta')"><i class="ph ph-plus"></i> Nova Despesa</button>` : ''}
+                        </div>
+                        <div id="list-contas">Carregando...</div>
+                        <div style="margin-top:20px; text-align:right; font-weight:bold" id="total-contas"></div>
+                    </div>
+                </div>
+
+                <!-- Tab Pix -->
+                <div id="tab-pix" style="display:none;">
+                    <div class="list-container">
+                        <div class="list-header">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <h3>Pix Crédito</h3>
+                                <span style="font-size:0.8rem; background:#eee; padding:2px 8px; border-radius:4px;">Taxa: ${state.pixTax}%</span>
+                                <i class="ph ph-gear" style="cursor:pointer" onclick="editTaxModal()"></i>
+                            </div>
+                            ${state.currentMonthData.status === 'ativo' ? 
+                            `<button class="btn-add" onclick="openExpenseModal('pix')"><i class="ph ph-plus"></i> Novo Pix</button>` : ''}
+                        </div>
+                        <div id="list-pix">Carregando...</div>
+                         <div style="margin-top:20px; text-align:right; font-weight:bold" id="total-pix"></div>
+                    </div>
+                </div>
+            `;
+
+            loadExpensesList();
+            loadPixList();
+        }
+
+        function switchTab(tabName, el) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            document.getElementById('tab-contas').style.display = tabName === 'contas' ? 'block' : 'none';
+            document.getElementById('tab-pix').style.display = tabName === 'pix' ? 'block' : 'none';
+        }
+
+        async function loadExpensesList() {
+            const { data, error } = await supabase.from('despesas_contas').select('*').eq('mes_id', state.currentMonthId).order('data', {ascending: true});
+            const list = document.getElementById('list-contas');
+            if(!data.length) { list.innerHTML = '<p style="color:#999; text-align:center;">Nenhuma conta lançada.</p>'; return; }
+
+            let total = 0;
+            let totalPago = 0;
+            list.innerHTML = data.map(item => {
+                total += item.valor;
+                if(item.pago) totalPago += item.valor;
+                return `
+                <div class="item-row ${item.pago ? 'paid-item' : ''}">
+                    <div class="item-info">
+                        <div class="item-title">${item.descricao}</div>
+                        <div class="item-date">${formatDate(item.data)}</div>
+                    </div>
+                    <div class="item-value">${formatCurrency(item.valor)}</div>
+                    ${state.currentMonthData.status === 'ativo' ? `
+                    <div class="actions">
+                        <button class="btn-icon check" title="Pagar" onclick="togglePay('despesas_contas', ${item.id}, ${!item.pago})">
+                            <i class="ph ${item.pago ? 'ph-arrow-u-up-left' : 'ph-check-circle'}"></i>
+                        </button>
+                        <button class="btn-icon" onclick="openExpenseModal('conta', ${item.id})"><i class="ph ph-pencil"></i></button>
+                        <button class="btn-icon delete" onclick="deleteItem('despesas_contas', ${item.id})"><i class="ph ph-trash"></i></button>
+                    </div>` : ''}
+                </div>`;
+            }).join('');
+            document.getElementById('total-contas').innerHTML = `Total: ${formatCurrency(total)} <br> <span style="font-size:0.9rem; color:var(--success)">Pago: ${formatCurrency(totalPago)}</span>`;
+        }
+
+        async function loadPixList() {
+            const { data, error } = await supabase.from('despesas_pix_credito').select('*').eq('mes_id', state.currentMonthId).order('data', {ascending: true});
+            const list = document.getElementById('list-pix');
+            if(!data.length) { list.innerHTML = '<p style="color:#999; text-align:center;">Nenhum pix lançado.</p>'; return; }
+
+            let total = 0;
+            let totalTaxas = 0;
+
+            list.innerHTML = data.map(item => {
+                total += item.valor_final;
+                totalTaxas += (item.valor_final - item.valor_original);
+                return `
+                <div class="item-row ${item.pago ? 'paid-item' : ''}">
+                    <div class="item-info">
+                        <div class="item-title">${item.descricao}</div>
+                        <div class="item-date">Orig: ${formatCurrency(item.valor_original)} + ${item.taxa_percentual}%</div>
+                    </div>
+                    <div class="item-value">${formatCurrency(item.valor_final)}</div>
+                    ${state.currentMonthData.status === 'ativo' ? `
+                    <div class="actions">
+                        <button class="btn-icon check" onclick="togglePay('despesas_pix_credito', ${item.id}, ${!item.pago})">
+                            <i class="ph ${item.pago ? 'ph-arrow-u-up-left' : 'ph-check-circle'}"></i>
+                        </button>
+                        <button class="btn-icon delete" onclick="deleteItem('despesas_pix_credito', ${item.id})"><i class="ph ph-trash"></i></button>
+                    </div>` : ''}
+                </div>`;
+            }).join('');
+
+            document.getElementById('total-pix').innerHTML = `Total: ${formatCurrency(total)} <br> <span style="font-size:0.9rem; color:#666">Total em Taxas: ${formatCurrency(totalTaxas)}</span>`;
+        }
+
+        // =========================================================================
+        // 6. MÓDULO: RECEITAS
+        // =========================================================================
+
+        async function renderRevenue() {
+            const main = document.getElementById('main-content');
+            main.innerHTML = `
+                ${renderHeader('Receitas')}
+                <div class="list-container">
+                    <div class="list-header">
+                        <h3>Entradas do Mês</h3>
+                        ${state.currentMonthData.status === 'ativo' ? 
+                        `<button class="btn-add" onclick="openRevenueModal()"><i class="ph ph-plus"></i> Nova Receita</button>` : ''}
+                    </div>
+                    <div id="list-receitas">Carregando...</div>
+                </div>
+            `;
+            
+            const { data } = await supabase.from('receitas').select('*').eq('mes_id', state.currentMonthId);
+            const list = document.getElementById('list-receitas');
+            if(!data.length) { list.innerHTML = '<p style="color:#999; text-align:center;">Nenhuma receita.</p>'; return; }
+
+            list.innerHTML = data.map(item => `
+                <div class="item-row">
+                    <div class="item-info">
+                        <div class="item-title">Entrada</div>
+                        <div class="item-date">${formatDate(item.data)}</div>
+                    </div>
+                    <div class="item-value" style="color:var(--success)">${formatCurrency(item.valor)}</div>
+                     ${state.currentMonthData.status === 'ativo' ? `
+                    <div class="actions">
+                        <button class="btn-icon delete" onclick="deleteItem('receitas', ${item.id})"><i class="ph ph-trash"></i></button>
+                    </div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        // =========================================================================
+        // 7. MÓDULO: BANCOS
+        // =========================================================================
+
+        async function renderBanks() {
+            const main = document.getElementById('main-content');
+            main.innerHTML = `
+                ${renderHeader('Bancos')}
+                <div class="list-container">
+                    <div class="list-header">
+                        <h3>Selecione o Banco</h3>
+                        ${state.currentMonthData.status === 'ativo' ? 
+                        `<button class="btn-add" onclick="openBankModal()"><i class="ph ph-plus"></i> Adicionar Banco</button>` : ''}
+                    </div>
+                    <div id="banks-grid" class="cards-container" style="margin-bottom:20px;"></div>
+                    <hr style="border:0; border-top:1px solid #eee; margin:20px 0;">
+                    <div id="bank-expenses-area" style="display:none;">
+                        <div class="list-header">
+                            <h3 id="selected-bank-name">Despesas</h3>
+                            ${state.currentMonthData.status === 'ativo' ? 
+                            `<button class="btn-add" onclick="openBankExpenseModal()"><i class="ph ph-plus"></i> Add Despesa</button>` : ''}
+                        </div>
+                        <div id="list-bank-expenses"></div>
+                    </div>
+                </div>
+            `;
+
+            const { data } = await supabase.from('bancos').select('*');
+            const grid = document.getElementById('banks-grid');
+            
+            grid.innerHTML = data.map(b => `
+                <div class="card" onclick="selectBank(${b.id}, '${b.nome}')" style="cursor:pointer; border-left: 5px solid ${b.cor}; padding:15px; min-height:80px;">
+                    <h3 style="margin:0; color:#333; font-size:1.1rem;">${b.nome}</h3>
+                    <p style="font-size:0.8rem; color:#999;">Clique para ver</p>
+                </div>
+            `).join('');
+        }
+
+        let selectedBankId = null;
+
+        async function selectBank(id, name) {
+            selectedBankId = id;
+            document.getElementById('bank-expenses-area').style.display = 'block';
+            document.getElementById('selected-bank-name').innerText = `Despesas: ${name}`;
+            loadBankExpenses();
+        }
+
+        async function loadBankExpenses() {
+            const { data } = await supabase.from('banco_despesas').select('*')
+                .eq('mes_id', state.currentMonthId)
+                .eq('banco_id', selectedBankId);
+            
+            const list = document.getElementById('list-bank-expenses');
+            if(!data.length) { list.innerHTML = '<p>Nenhuma despesa neste banco.</p>'; return; }
+
+            list.innerHTML = data.map(item => `
+                <div class="item-row ${item.pago ? 'paid-item' : ''}">
+                    <div class="item-info">
+                        <div class="item-title">${item.descricao}</div>
+                        <div class="item-date">${formatDate(item.data)}</div>
+                    </div>
+                    <div class="item-value">${formatCurrency(item.valor)}</div>
+                     ${state.currentMonthData.status === 'ativo' ? `
+                    <div class="actions">
+                        <button class="btn-icon check" onclick="togglePay('banco_despesas', ${item.id}, ${!item.pago})">
+                            <i class="ph ${item.pago ? 'ph-arrow-u-up-left' : 'ph-check-circle'}"></i>
+                        </button>
+                        <button class="btn-icon delete" onclick="deleteItem('banco_despesas', ${item.id})"><i class="ph ph-trash"></i></button>
+                    </div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        // =========================================================================
+        // 8. MÓDULO: FECHAMENTO
+        // =========================================================================
+
+        async function renderClosing() {
+            const main = document.getElementById('main-content');
+            const { data: meses } = await supabase.from('meses').select('*').order('criado_em', { ascending: false });
+
+            const listMeses = meses.map(m => `
+                <div class="month-card ${m.status === 'ativo' ? 'active-month' : 'closed-month'}">
+                    <div>
+                        <strong>${m.nome}/${m.ano}</strong>
+                        <div style="font-size:0.8rem; color:#666;">Status: ${m.status.toUpperCase()}</div>
+                    </div>
+                    <div>
+                        ${m.status === 'fechado' 
+                            ? `<span style="font-weight:bold; margin-right:10px;">Saldo: ${formatCurrency(m.saldo_final)}</span>
+                               <button onclick="reopenMonthView(${m.id})" style="padding:5px 10px; cursor:pointer;">Ver/Reabrir</button>`
+                            : '<span style="color:var(--success); font-weight:bold;">Em Aberto</span>'
+                        }
+                    </div>
+                </div>
+            `).join('');
+
+            main.innerHTML = `
+                ${renderHeader('Fechamento')}
+                <div class="list-container">
+                    <h3>Histórico de Meses</h3>
+                    <div style="margin-top:20px;">
+                        ${listMeses}
+                    </div>
+                </div>
+            `;
+        }
+
+        function reopenMonthView(id) {
+            state.currentMonthId = id;
+            supabase.from('meses').select('*').eq('id', id).single().then(({data}) => {
+                state.currentMonthData = data;
+                showToast(`Visualizando ${data.nome}/${data.ano}`);
+                navigate('overview');
+            });
+        }
+
+        async function closeMonthRoutine() {
+            if(!confirm("Tem certeza que deseja fechar o mês? Isso criará o próximo mês automaticamente.")) return;
+
+            // 1. Calcular Saldo Final
+            // (Re-calculate logic from Overview to be safe)
+            const [receitas, despesas, pix, bancos] = await Promise.all([
+                supabase.from('receitas').select('valor').eq('mes_id', state.currentMonthId),
+                supabase.from('despesas_contas').select('valor').eq('mes_id', state.currentMonthId),
+                supabase.from('despesas_pix_credito').select('valor_final').eq('mes_id', state.currentMonthId),
+                supabase.from('banco_despesas').select('valor').eq('mes_id', state.currentMonthId)
+            ]);
+            const total = receitas.data.reduce((a,c)=>a+c.valor,0) - (
+                despesas.data.reduce((a,c)=>a+c.valor,0) + 
+                pix.data.reduce((a,c)=>a+c.valor_final,0) + 
+                bancos.data.reduce((a,c)=>a+c.valor,0)
+            );
+
+            // 2. Atualizar Mês Atual para Fechado
+            await supabase.from('meses').update({ status: 'fechado', saldo_final: total }).eq('id', state.currentMonthId);
+
+            // 3. Criar Próximo Mês
+            const months = ["JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO", "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"];
+            let currentName = state.currentMonthData.nome;
+            let currentYear = state.currentMonthData.ano;
+            
+            let idx = months.indexOf(currentName);
+            let nextIdx = idx + 1;
+            let nextYear = currentYear;
+            
+            if (nextIdx > 11) { nextIdx = 0; nextYear++; }
+
+            const { data: newMonth } = await supabase.from('meses').insert([{
+                nome: months[nextIdx],
+                ano: nextYear,
+                status: 'ativo'
+            }]).select().single();
+
+            showToast("Mês fechado! Próximo mês criado.");
+            
+            // 4. Reload
+            init();
+        }
+
+        // =========================================================================
+        // 9. FUNÇÕES DE CRUD (Modais e Ações)
+        // =========================================================================
+
+        // --- Generic Actions ---
+        async function togglePay(table, id, status) {
+            await supabase.from(table).update({ pago: status }).eq('id', id);
+            // Refresh current view
+            if(state.view === 'expenses') { loadExpensesList(); loadPixList(); }
+            if(state.view === 'banks') loadBankExpenses();
+        }
+
+        async function deleteItem(table, id) {
+            if(!confirm("Excluir item?")) return;
+            await supabase.from(table).delete().eq('id', id);
+            if(state.view === 'expenses') { loadExpensesList(); loadPixList(); }
+            if(state.view === 'revenue') renderRevenue();
+            if(state.view === 'banks') loadBankExpenses();
+        }
+
+        // --- MODAIS ---
+        const modal = document.getElementById('generic-modal');
+        const mTitle = document.getElementById('modal-title');
+        const mBody = document.getElementById('modal-body');
+        const mBtn = document.getElementById('modal-confirm-btn');
+
+        function openModal() { modal.style.display = 'flex'; }
+        function closeModal() { modal.style.display = 'none'; }
+        modal.addEventListener('click', (e) => { if(e.target === modal) closeModal(); });
+
+        // Nova Despesa (Conta ou Pix)
+        function openExpenseModal(type, editId = null) {
+            mTitle.innerText = editId ? "Editar Despesa" : (type === 'conta' ? "Nova Conta" : "Novo Pix Crédito");
+            
+            // Buscar dados se for edição
+            let dataPromise = Promise.resolve(null);
+            if (editId) {
+                const table = type === 'conta' ? 'despesas_contas' : 'despesas_pix_credito';
+                dataPromise = supabase.from(table).select('*').eq('id', editId).single();
+            }
+
+            dataPromise.then(({ data: item }) => {
+                const descVal = item ? item.descricao : '';
+                const valVal = item ? (type === 'conta' ? item.valor : item.valor_original) : '';
+                const dateVal = item ? item.data : new Date().toISOString().split('T')[0];
+
+                let extraFields = '';
+                if (type === 'pix') {
+                    extraFields = `<div style="background:#f3f4f6; padding:10px; border-radius:8px; margin-bottom:10px; font-size:0.9rem;">
+                        Taxa Atual: <strong>${state.pixTax}%</strong><br>
+                        O valor final será calculado automaticamente ao salvar.
+                    </div>`;
+                }
+
+                mBody.innerHTML = `
+                    <div class="form-group"><label>Descrição</label><input type="text" id="inp-desc" value="${descVal}"></div>
+                    <div class="form-group"><label>Valor (R$)</label><input type="number" step="0.01" id="inp-val" value="${valVal}"></div>
+                    <div class="form-group"><label>Data</label><input type="date" id="inp-date" value="${dateVal}"></div>
+                    ${extraFields}
+                `;
+
+                mBtn.onclick = async () => {
+                    const desc = document.getElementById('inp-desc').value;
+                    const val = parseFloat(document.getElementById('inp-val').value);
+                    const dt = document.getElementById('inp-date').value;
+
+                    if (!desc || isNaN(val)) { alert("Preencha corretamente"); return; }
+
+                    if (type === 'conta') {
+                        const payload = { mes_id: state.currentMonthId, descricao: desc, valor: val, data: dt };
+                        if (editId) await supabase.from('despesas_contas').update(payload).eq('id', editId);
+                        else await supabase.from('despesas_contas').insert([payload]);
+                    } else {
+                        const final = val + (val * (state.pixTax / 100));
+                        const payload = { mes_id: state.currentMonthId, descricao: desc, valor_original: val, taxa_percentual: state.pixTax, valor_final: final, data: dt };
+                        if (editId) await supabase.from('despesas_pix_credito').update(payload).eq('id', editId); // Nota: taxa atualiza se editar
+                        else await supabase.from('despesas_pix_credito').insert([payload]);
+                    }
+                    closeModal();
+                    loadExpensesList(); loadPixList();
+                };
+                openModal();
+            });
+        }
+
+        // Config Taxa Pix
+        function editTaxModal() {
+            mTitle.innerText = "Configurar Taxa Pix";
+            mBody.innerHTML = `
+                <div class="form-group"><label>Taxa (%)</label><input type="number" step="0.1" id="inp-tax" value="${state.pixTax}"></div>
+            `;
+            mBtn.onclick = async () => {
+                const val = parseFloat(document.getElementById('inp-tax').value);
+                await supabase.from('configuracoes').update({ valor: val }).eq('chave', 'taxa_pix');
+                state.pixTax = val;
+                closeModal();
+                navigate('expenses'); // Reload
+            };
+            openModal();
+        }
+
+        // Receita
+        function openRevenueModal() {
+            mTitle.innerText = "Nova Receita";
+            mBody.innerHTML = `
+                <div class="form-group"><label>Valor (R$)</label><input type="number" step="0.01" id="inp-val"></div>
+                <div class="form-group"><label>Data</label><input type="date" id="inp-date" value="${new Date().toISOString().split('T')[0]}"></div>
+            `;
+            mBtn.onclick = async () => {
+                const val = parseFloat(document.getElementById('inp-val').value);
+                const dt = document.getElementById('inp-date').value;
+                await supabase.from('receitas').insert([{ mes_id: state.currentMonthId, valor: val, data: dt }]);
+                closeModal();
+                renderRevenue();
+            };
+            openModal();
+        }
+
+        // Banco
+        function openBankModal() {
+            mTitle.innerText = "Adicionar Banco";
+            mBody.innerHTML = `
+                <div class="form-group"><label>Nome do Banco</label><input type="text" id="inp-b-name"></div>
+                <div class="form-group"><label>Cor (Hex)</label><input type="color" id="inp-b-color" style="height:40px;"></div>
+            `;
+            mBtn.onclick = async () => {
+                const nome = document.getElementById('inp-b-name').value;
+                const cor = document.getElementById('inp-b-color').value;
+                await supabase.from('bancos').insert([{ nome, cor }]);
+                closeModal();
+                renderBanks();
+            };
+            openModal();
+        }
+
+        // Despesa de Banco
+        function openBankExpenseModal() {
+            if(!selectedBankId) return;
+            mTitle.innerText = "Despesa no Banco";
+            mBody.innerHTML = `
+                <div class="form-group"><label>Descrição</label><input type="text" id="inp-desc"></div>
+                <div class="form-group"><label>Valor (R$)</label><input type="number" step="0.01" id="inp-val"></div>
+                <div class="form-group"><label>Data</label><input type="date" id="inp-date" value="${new Date().toISOString().split('T')[0]}"></div>
+            `;
+            mBtn.onclick = async () => {
+                const desc = document.getElementById('inp-desc').value;
+                const val = parseFloat(document.getElementById('inp-val').value);
+                const dt = document.getElementById('inp-date').value;
+                
+                await supabase.from('banco_despesas').insert([{ 
+                    mes_id: state.currentMonthId, 
+                    banco_id: selectedBankId,
+                    descricao: desc, 
+                    valor: val, 
+                    data: dt 
+                }]);
+                closeModal();
+                loadBankExpenses();
+            };
+            openModal();
+        }
+
+        // Start
+        window.onload = init;
+
+    </script>
+</body>
+</html>
