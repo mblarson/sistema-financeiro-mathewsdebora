@@ -265,8 +265,18 @@
         
         /* INPUT PADRÃO DESKTOP */
         .form-group input, .form-group select {
-            background: #F9FAFB; border: 1px solid #E5E7EB; padding: 0 16px; height: 56px; border-radius: 12px;
-            width: 100%; font-size: 1rem; transition: 0.2s; color: var(--text-main);
+            background: #F9FAFB; 
+            border: 1px solid #E5E7EB; 
+            padding: 0 16px; 
+            height: 56px; 
+            border-radius: 12px;
+            width: 100%; 
+            /* CORREÇÃO AQUI: Garante que não estoure o container */
+            max-width: 100%; 
+            box-sizing: border-box;
+            font-size: 1rem; 
+            transition: 0.2s; 
+            color: var(--text-main);
         }
         .form-group input:focus { border-color: var(--primary); background: #fff; outline: none; box-shadow: 0 0 0 3px var(--primary-light); }
         
@@ -316,6 +326,7 @@
             .form-group input, .form-group select {
                 height: 45px; /* Menor altura para mobile */
                 font-size: 0.95rem;
+                max-width: 100%; /* Reforço para mobile */
             }
             .form-group { margin-bottom: 15px; }
         }
