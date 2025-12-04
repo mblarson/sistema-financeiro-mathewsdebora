@@ -224,16 +224,16 @@
         .item-icon {
             width: 40px; height: 40px; background: #F3F4F6; border-radius: 12px;
             display: flex; align-items: center; justify-content: center;
-            color: var(--text-main); margin-right: 15px;
+            color: var(--text-main); margin-right: 15px; flex-shrink: 0;
         }
-        .item-info { flex: 1; }
-        .item-title { font-weight: 600; color: var(--text-main); font-size: 1rem; }
+        .item-info { flex: 1; min-width: 0; /* Permite truncar texto */ margin-right: 10px; }
+        .item-title { font-weight: 600; color: var(--text-main); font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .item-date { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; }
-        .item-value { font-weight: 700; font-size: 1.1rem; color: var(--text-main); }
+        .item-value { font-weight: 700; font-size: 1.1rem; color: var(--text-main); white-space: nowrap; }
         .paid-item .item-title { text-decoration: line-through; color: var(--text-muted); }
         .paid-item .item-icon { background: var(--primary-light); color: var(--primary); }
 
-        .actions { display: flex; gap: 8px; margin-left: 20px;}
+        .actions { display: flex; gap: 8px; margin-left: 10px; flex-shrink: 0; }
         .btn-icon { 
             background: #fff; border: 1px solid #E5E7EB; cursor: pointer; width: 32px; height: 32px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center; color: var(--text-muted); transition: 0.2s;
@@ -242,8 +242,8 @@
         .btn-icon.delete:hover { border-color: var(--danger); color: var(--danger); }
 
         /* --- Tabs --- */
-        .tabs { display: flex; gap: 10px; margin-bottom: 30px; background: #F3F4F6; padding: 5px; border-radius: 16px; width: fit-content; }
-        .tab { padding: 10px 24px; cursor: pointer; color: var(--text-muted); font-weight: 600; border-radius: 12px; transition: 0.3s; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 30px; background: #F3F4F6; padding: 5px; border-radius: 16px; width: fit-content; max-width: 100%; overflow-x: auto;}
+        .tab { padding: 10px 24px; cursor: pointer; color: var(--text-muted); font-weight: 600; border-radius: 12px; transition: 0.3s; white-space: nowrap;}
         .tab.active { background: #fff; color: var(--text-main); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
 
         /* --- Modals --- */
@@ -262,6 +262,8 @@
         .modal h2 { margin-bottom: 25px; color: var(--text-main); font-size: 1.5rem; text-align: center; }
         .form-group { margin-bottom: 20px; }
         .form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-muted); font-size: 0.9rem; }
+        
+        /* INPUT PADRÃO DESKTOP */
         .form-group input, .form-group select {
             background: #F9FAFB; border: 1px solid #E5E7EB; padding: 0 16px; height: 56px; border-radius: 12px;
             width: 100%; font-size: 1rem; transition: 0.2s; color: var(--text-main);
@@ -282,14 +284,40 @@
 
         /* --- Mobile --- */
         .mobile-menu-btn { display: none; position: absolute; top: 25px; left: 25px; z-index: 200; font-size: 1.8rem; color: var(--text-main); cursor: pointer; }
+        
         @media (max-width: 768px) {
             aside { position: absolute; height: 100%; transform: translateX(-100%); width: 280px; box-shadow: 5px 0 15px rgba(0,0,0,0.1); }
             aside.open { transform: translateX(0); }
-            main { padding: 80px 20px 20px 20px; }
+            main { padding: 80px 15px 20px 15px; } /* Menos padding lateral */
             .mobile-menu-btn { display: block; }
-            .cards-container { grid-template-columns: 1fr; }
+            .cards-container { grid-template-columns: 1fr; gap: 15px; }
             .header-right { display: none; }
             .modal { padding: 25px; }
+            
+            /* Ajustes Mobile para Listagem */
+            .list-container { padding: 20px 15px; }
+            .item-row { padding: 12px 0; }
+            
+            /* Reduzir ícones e fontes */
+            .item-icon { width: 32px; height: 32px; font-size: 1rem; margin-right: 10px; }
+            .item-title { font-size: 0.9rem; }
+            .item-date { font-size: 0.75rem; }
+            .item-value { font-size: 0.95rem; }
+            
+            /* Botões de ação menores */
+            .btn-icon { width: 28px; height: 28px; font-size: 0.9rem; }
+            .actions { gap: 5px; margin-left: 8px; }
+            
+            /* Botão Adicionar menor */
+            .btn-add { padding: 8px 16px; font-size: 0.85rem; }
+            .list-header h3 { font-size: 1.1rem; }
+
+            /* Ajuste INPUTS Mobile */
+            .form-group input, .form-group select {
+                height: 45px; /* Menor altura para mobile */
+                font-size: 0.95rem;
+            }
+            .form-group { margin-bottom: 15px; }
         }
     </style>
 </head>
