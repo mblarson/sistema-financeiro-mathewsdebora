@@ -330,11 +330,13 @@
         .form-group input, .form-group select {
             background: #F9FAFB; 
             border: 1px solid #E5E7EB; 
-            padding: 16px; /* Touch target maior */
+            padding: 0 16px; /* Padding vertical removido para usar height fixo */
+            height: 56px;    /* Altura fixa garante que Date e Text fiquem iguais */
             border-radius: 12px;
             width: 100%;
             font-size: 1rem;
             transition: 0.2s;
+            color: var(--text-main);
         }
         .form-group input:focus { border-color: var(--primary); background: #fff; outline: none; box-shadow: 0 0 0 3px var(--primary-light); }
         
