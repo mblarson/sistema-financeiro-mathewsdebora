@@ -305,21 +305,68 @@
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000;
             backdrop-filter: blur(4px);
+            padding: 20px; /* Garante espaço nas bordas no mobile */
         }
         .modal {
-            background: white; width: 90%; max-width: 450px; padding: 40px; border-radius: 30px;
+            background: white; 
+            width: 100%; 
+            max-width: 450px; 
+            padding: 35px; 
+            border-radius: 24px;
             animation: slideUp 0.3s ease;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+            max-height: 90vh; /* Limita altura */
+            overflow-y: auto; /* Rolagem se necessário */
+            display: flex;
+            flex-direction: column;
         }
         
-        .modal h2 { margin-bottom: 25px; color: var(--text-main); font-size: 1.5rem; }
+        .modal h2 { margin-bottom: 25px; color: var(--text-main); font-size: 1.5rem; text-align: center; }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-group label {
+            display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-muted); font-size: 0.9rem;
+        }
         .form-group input, .form-group select {
-            background: #F9FAFB; border: 1px solid #E5E7EB; padding: 14px; border-radius: 12px;
+            background: #F9FAFB; 
+            border: 1px solid #E5E7EB; 
+            padding: 16px; /* Touch target maior */
+            border-radius: 12px;
+            width: 100%;
+            font-size: 1rem;
+            transition: 0.2s;
         }
-        .form-group input:focus { border-color: var(--primary); background: #fff; }
+        .form-group input:focus { border-color: var(--primary); background: #fff; outline: none; box-shadow: 0 0 0 3px var(--primary-light); }
         
-        .btn-confirm { background: var(--primary-dark); border-radius: 12px; padding: 12px 24px; font-weight: 600;}
-        .btn-cancel { background: transparent; color: var(--text-muted); }
+        .modal-actions {
+            display: flex;
+            flex-direction: column; /* Botões empilhados no mobile */
+            gap: 12px;
+            margin-top: 20px;
+        }
+        
+        .btn-confirm, .btn-cancel {
+            width: 100%;
+            padding: 16px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            text-align: center;
+            border: none;
+            transition: 0.2s;
+        }
+
+        .btn-confirm { background: var(--primary-dark); color: white; box-shadow: 0 4px 15px rgba(20, 83, 45, 0.2); }
+        .btn-confirm:active { transform: scale(0.98); }
+        
+        .btn-cancel { background: #F3F4F6; color: var(--text-main); }
+        
+        /* Ajuste para telas maiores nos botões do modal */
+        @media(min-width: 480px) {
+            .modal-actions { flex-direction: row; }
+            .btn-confirm, .btn-cancel { width: 50%; }
+        }
 
         /* --- Mobile --- */
         .mobile-menu-btn { display: none; position: absolute; top: 25px; left: 25px; z-index: 200; font-size: 1.8rem; color: var(--text-main); cursor: pointer; }
@@ -331,6 +378,7 @@
             .mobile-menu-btn { display: block; }
             .cards-container { grid-template-columns: 1fr; }
             .header-right { display: none; } /* Simplifica header mobile */
+            .modal { padding: 25px; } /* Menos padding interno no mobile */
         }
     </style>
 </head>
@@ -403,7 +451,7 @@
 
     <script>
         // =========================================================================
-        // 1. CONFIGURAÇÃO (Mantida do seu arquivo anterior)
+        // 1. CONFIGURAÇÃO
         // =========================================================================
         const SUPABASE_URL = 'https://bnhxmjcgyqwjombhrdks.supabase.co'; 
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJuaHhtamNneXF3am9tYmhyZGtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NDk3MDksImV4cCI6MjA4MDQyNTcwOX0.wg7k8DJhE29d24BzGwp5ltUx_x_4iXjQFOC55x3t4B8';
@@ -430,6 +478,26 @@
             const [y, m, d] = dateStr.split('-');
             return `${d}/${m}`;
         };
+
+        // --- MÁSCARA DE MOEDA (Input Mask) ---
+        function maskCurrency(input) {
+            let value = input.value.replace(/\D/g, ''); // Remove tudo que não é dígito
+            if (value === '') {
+                input.value = '';
+                return;
+            }
+            // Converte para centavos e formata
+            value = (parseInt(value) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+            input.value = 'R$ ' + value;
+        }
+
+        // --- PARSE DE MOEDA (String R$ -> Float) ---
+        function parseCurrency(str) {
+            if (!str) return 0;
+            // Remove R$, pontos e espaços, troca vírgula por ponto
+            let clean = str.replace(/[^\d,]/g, '').replace(',', '.');
+            return parseFloat(clean) || 0;
+        }
 
         // =========================================================================
         // 2. INICIALIZAÇÃO
@@ -731,7 +799,7 @@
                 <div class="item-row">
                     <div class="item-icon" style="background:#dcfce7; color:var(--primary);"><i class="ph ph-arrow-down-left"></i></div>
                     <div class="item-info">
-                        <div class="item-title">Entrada</div>
+                        <div class="item-title">${item.descricao || 'Entrada'}</div>
                         <div class="item-date">${formatDate(item.data)}</div>
                     </div>
                     <div class="item-value" style="color:var(--success)">${formatCurrency(item.valor)}</div>
@@ -913,17 +981,26 @@
 
             dataPromise.then(({ data: item }) => {
                 const descVal = item ? item.descricao : '';
-                const valVal = item ? (type === 'conta' ? item.valor : item.valor_original) : '';
+                // Formatação inicial se existir valor
+                let valVal = '';
+                if (item) {
+                     const numVal = type === 'conta' ? item.valor : item.valor_original;
+                     valVal = numVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                     valVal = 'R$ ' + valVal;
+                }
                 const dateVal = item ? item.data : new Date().toISOString().split('T')[0];
+                
                 mBody.innerHTML = `
                     <div class="form-group"><label>Descrição</label><input type="text" id="inp-desc" value="${descVal}"></div>
-                    <div class="form-group"><label>Valor (R$)</label><input type="number" step="0.01" id="inp-val" value="${valVal}"></div>
+                    <div class="form-group"><label>Valor</label><input type="text" id="inp-val" value="${valVal}" placeholder="R$ 0,00" oninput="maskCurrency(this)"></div>
                     <div class="form-group"><label>Data</label><input type="date" id="inp-date" value="${dateVal}"></div>
                 `;
                 mBtn.onclick = async () => {
                     const desc = document.getElementById('inp-desc').value;
-                    const val = parseFloat(document.getElementById('inp-val').value);
+                    const valStr = document.getElementById('inp-val').value;
+                    const val = parseCurrency(valStr); // Converte máscara para float
                     const dt = document.getElementById('inp-date').value;
+                    
                     if (!desc || isNaN(val)) return;
 
                     if (type === 'conta') {
@@ -942,16 +1019,22 @@
             });
         }
 
+        // --- RECEITA COM DESCRIÇÃO E MÁSCARA ---
         function openRevenueModal() {
             mTitle.innerText = "Nova Receita";
             mBody.innerHTML = `
-                <div class="form-group"><label>Valor</label><input type="number" step="0.01" id="inp-val"></div>
+                <div class="form-group"><label>Descrição</label><input type="text" id="inp-desc" placeholder="Ex: Salário"></div>
+                <div class="form-group"><label>Valor</label><input type="text" id="inp-val" placeholder="R$ 0,00" oninput="maskCurrency(this)"></div>
                 <div class="form-group"><label>Data</label><input type="date" id="inp-date" value="${new Date().toISOString().split('T')[0]}"></div>
             `;
             mBtn.onclick = async () => {
-                const val = parseFloat(document.getElementById('inp-val').value);
+                const desc = document.getElementById('inp-desc').value;
+                const valStr = document.getElementById('inp-val').value;
+                const val = parseCurrency(valStr);
                 const dt = document.getElementById('inp-date').value;
-                await supabase.from('receitas').insert([{ mes_id: state.currentMonthId, valor: val, data: dt }]);
+                
+                // Inclui o campo 'descricao' no insert
+                await supabase.from('receitas').insert([{ mes_id: state.currentMonthId, descricao: desc, valor: val, data: dt }]);
                 closeModal(); renderRevenue();
             };
             openModal();
@@ -988,13 +1071,15 @@
             mTitle.innerText = "Despesa Banco";
             mBody.innerHTML = `
                 <div class="form-group"><label>Descrição</label><input type="text" id="inp-desc"></div>
-                <div class="form-group"><label>Valor</label><input type="number" step="0.01" id="inp-val"></div>
+                <div class="form-group"><label>Valor</label><input type="text" id="inp-val" placeholder="R$ 0,00" oninput="maskCurrency(this)"></div>
                 <div class="form-group"><label>Data</label><input type="date" id="inp-date" value="${new Date().toISOString().split('T')[0]}"></div>
             `;
             mBtn.onclick = async () => {
                 const desc = document.getElementById('inp-desc').value;
-                const val = parseFloat(document.getElementById('inp-val').value);
+                const valStr = document.getElementById('inp-val').value;
+                const val = parseCurrency(valStr);
                 const dt = document.getElementById('inp-date').value;
+                
                 await supabase.from('banco_despesas').insert([{ mes_id: state.currentMonthId, banco_id: selectedBankId, descricao: desc, valor: val, data: dt }]);
                 closeModal(); loadBankExpenses();
             };
